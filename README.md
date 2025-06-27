@@ -66,18 +66,6 @@ npm install @your-username/n8n-nodes-reminders
    - **API Token**: Optional authentication token
    - **Ignore SSL Issues**: Enable for development/self-signed certificates
 
-### API Token Generation (Optional)
-
-If your Reminders CLI server requires authentication:
-
-```bash
-# Generate an API token
-reminders-api --generate-token
-
-# Start server with token validation
-reminders-api --port 8080 --require-token
-```
-
 ## Usage
 
 ### Traditional Reminders Node
