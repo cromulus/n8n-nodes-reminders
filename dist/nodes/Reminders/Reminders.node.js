@@ -16,6 +16,7 @@ class Reminders {
             },
             inputs: ["main"],
             outputs: ["main"],
+            usableAsTool: true,
             credentials: [
                 {
                     name: 'remindersApi',

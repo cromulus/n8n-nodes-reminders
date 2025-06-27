@@ -40,7 +40,6 @@
     "files": [
         "dist/credentials/RemindersApi.credentials.*",
         "dist/nodes/Reminders/",
-        "dist/nodes/RemindersAiTool/",
         "README.md",
         "LICENSE.md"
     ],
@@ -50,8 +49,7 @@
             "dist/credentials/RemindersApi.credentials.js"
         ],
         "nodes": [
-            "dist/nodes/Reminders/Reminders.node.js",
-            "dist/nodes/RemindersAiTool/RemindersAiTool.node.js"
+            "dist/nodes/Reminders/Reminders.node.js"
         ]
     },
     "devDependencies": {
