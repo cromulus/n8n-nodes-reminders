@@ -88,7 +88,7 @@ class Reminders {
                             routing: {
                                 request: {
                                     method: 'GET',
-                                    url: '=/lists/{{encodeURIComponent($parameter.listName)}}',
+                                    url: '=/lists/{{encodeURIComponent($parameter.listName.value || $parameter.listName)}}',
                                 },
                             },
                         },
@@ -136,7 +136,7 @@ class Reminders {
                             routing: {
                                 request: {
                                     method: 'POST',
-                                    url: '=/lists/{{encodeURIComponent($parameter.listName)}}/reminders',
+                                    url: '=/lists/{{encodeURIComponent($parameter.listName.value || $parameter.listName)}}/reminders',
                                 },
                                 send: {
                                     type: 'body',
@@ -224,7 +224,19 @@ class Reminders {
                                 },
                                 send: {
                                     type: 'body',
-                                    property: 'title,notes,dueDate,priority,isCompleted',
+                                    property: 'title,notes,dueDate,priority,isCompleted,listName',
+                                    preSend: [
+                                        function (requestOptions) {
+                                            const newListName = this.getNodeParameter('newListName', 0, undefined);
+                                            if (newListName) {
+                                                const listValue = typeof newListName === 'object' ? newListName.value : newListName;
+                                                if (listValue) {
+                                                    requestOptions.body.listName = listValue;
+                                                }
+                                            }
+                                            return requestOptions;
+                                        },
+                                    ],
                                 },
                             },
                         },
@@ -342,7 +354,8 @@ class Reminders {
                 {
                     displayName: 'List Name',
                     name: 'listName',
-                    type: 'string',
+                    type: 'resourceLocator',
+                    default: { mode: 'list', value: '' },
                     required: true,
                     displayOptions: {
                         show: {
@@ -350,9 +363,58 @@ class Reminders {
                             operation: ['getReminders', 'create'],
                         },
                     },
-                    default: '',
+                    modes: [
+                        {
+                            displayName: 'From List',
+                            name: 'list',
+                            type: 'list',
+                            placeholder: 'Select a list...',
+                            typeOptions: {
+                                searchListMethod: 'searchLists',
+                                searchFilterRequired: false,
+                                searchable: true,
+                            },
+                        },
+                        {
+                            displayName: 'By Name',
+                            name: 'name',
+                            type: 'string',
+                            placeholder: 'Shopping',
+                        },
+                    ],
                     description: 'Name of the reminder list',
-                    placeholder: 'Shopping',
+                },
+                {
+                    displayName: 'New List Name',
+                    name: 'newListName',
+                    type: 'resourceLocator',
+                    default: { mode: 'list', value: '' },
+                    displayOptions: {
+                        show: {
+                            resource: ['reminder'],
+                            operation: ['update'],
+                        },
+                    },
+                    modes: [
+                        {
+                            displayName: 'From List',
+                            name: 'list',
+                            type: 'list',
+                            placeholder: 'Select a list...',
+                            typeOptions: {
+                                searchListMethod: 'searchLists',
+                                searchFilterRequired: false,
+                                searchable: true,
+                            },
+                        },
+                        {
+                            displayName: 'By Name',
+                            name: 'name',
+                            type: 'string',
+                            placeholder: 'Shopping',
+                        },
+                    ],
+                    description: 'Move reminder to this list (optional)',
                 },
                 {
                     displayName: 'Include Completed',
@@ -641,6 +703,33 @@ class Reminders {
                     placeholder: '{"listNames": ["Shopping", "Work"], "completed": "all"}',
                 },
             ],
+        };
+        this.methods = {
+            listSearch: {
+                async searchLists(filter) {
+                    const returnData = [];
+                    try {
+                        const response = await this.helpers.httpRequestWithAuthentication.call(this, 'remindersApi', {
+                            method: 'GET',
+                            url: '/lists',
+                            json: true,
+                        });
+                        const lists = Array.isArray(response) ? response : [];
+                        for (const list of lists) {
+                            const listName = typeof list === 'string' ? list : list.name || list.title || String(list);
+                            if (!filter || listName.toLowerCase().includes(filter.toLowerCase())) {
+                                returnData.push({
+                                    name: listName,
+                                    value: listName,
+                                });
+                            }
+                        }
+                    }
+                    catch (error) {
+                    }
+                    return { results: returnData };
+                },
+            },
         };
     }
 }
