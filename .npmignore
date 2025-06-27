@@ -1,0 +1,60 @@
+# Source files (only include built dist/ directory)
+nodes/
+credentials/
+*.ts
+tsconfig.json
+gulpfile.js
+
+# Development files
+.github/
+.git/
+.gitignore
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Testing and development
+test/
+tests/
+*.test.js
+*.test.ts
+coverage/
+.nyc_output/
+
+# Documentation that's not needed in package
+README_TEMPLATE.md
+REMINDERS_CLI_API.md
+install.sh
+CODE_OF_CONDUCT.md
+
+# Build artifacts we don't need
+*.tsbuildinfo
+.eslintcache
+
+# Example files from template
+**/ExampleNode/
+**/ExampleCredentialsApi.*
+**/HttpBin/
+
+# Keep these files in the package:
+# - dist/ (built files)
+# - package.json
+# - README.md
+# - LICENSE.md

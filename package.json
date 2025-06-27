@@ -1,0 +1,68 @@
+{
+  "name": "n8n-nodes-reminders",
+  "version": "1.0.0",
+  "description": "n8n nodes for macOS Reminders API with AI tool support",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "reminders",
+    "macos",
+    "productivity",
+    "ai-tool",
+    "automation",
+    "task-management"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/your-username/n8n-nodes-reminders#readme",
+  "author": {
+    "name": "Your Name",
+    "email": "your.email@example.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/n8n-nodes-reminders.git"
+  },
+  "engines": {
+    "node": ">=20.15"
+  },
+  "main": "index.js",
+  "scripts": {
+    "build": "npx rimraf dist && tsc && gulp build:icons",
+    "dev": "tsc --watch",
+    "format": "prettier nodes credentials --write",
+    "lint": "eslint nodes credentials package.json",
+    "lintfix": "eslint nodes credentials package.json --fix",
+    "prepublishOnly": "npm run build && npm run lint",
+    "test": "npm run lint && npm run build",
+    "release": "npm run test && npm publish",
+    "package": "npm run build && npm pack"
+  },
+  "files": [
+    "dist/credentials/RemindersApi.credentials.*",
+    "dist/nodes/Reminders/",
+    "dist/nodes/RemindersAiTool/",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/RemindersApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Reminders/Reminders.node.js",
+      "dist/nodes/RemindersAiTool/RemindersAiTool.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@typescript-eslint/parser": "~8.32.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-n8n-nodes-base": "^1.16.3",
+    "gulp": "^5.0.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}

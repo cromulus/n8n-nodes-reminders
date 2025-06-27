@@ -1,0 +1,152 @@
+name: Build and Publish
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  release:
+    types: [ published ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Build package
+      run: npm run build
+      
+    - name: Upload build artifacts
+      if: matrix.node-version == '20.x'
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: |
+          dist/
+          package.json
+          README.md
+        retention-days: 30
+
+  publish-github:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    permissions:
+      contents: read
+      packages: write
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@${{ github.repository_owner }}'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build package
+      run: npm run build
+      
+    - name: Configure package for GitHub Packages
+      run: |
+        # Update package name to include scope for GitHub Packages
+        npm pkg set name="@${{ github.repository_owner }}/n8n-nodes-reminders"
+        npm pkg set publishConfig.registry="https://npm.pkg.github.com"
+        npm pkg set repository.url="git+https://github.com/${{ github.repository }}.git"
+        
+    - name: Publish to GitHub Packages
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-npm:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        registry-url: 'https://registry.npmjs.org'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build package
+      run: npm run build
+      
+    - name: Publish to npm
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  test-install:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build package
+      run: npm run build
+      
+    - name: Pack for testing
+      run: npm pack
+      
+    - name: Test installation in clean environment
+      run: |
+        mkdir test-install
+        cd test-install
+        npm init -y
+        npm install ../n8n-nodes-reminders-*.tgz
+        
+    - name: Verify package contents
+      run: |
+        cd test-install
+        echo "Checking installed package structure..."
+        ls -la node_modules/@*/n8n-nodes-reminders/ || ls -la node_modules/n8n-nodes-reminders/
+        echo "Checking for required files..."
+        test -f node_modules/*/n8n-nodes-reminders/dist/credentials/RemindersApi.credentials.js || test -f node_modules/n8n-nodes-reminders/dist/credentials/RemindersApi.credentials.js
+        test -f node_modules/*/n8n-nodes-reminders/dist/nodes/Reminders/Reminders.node.js || test -f node_modules/n8n-nodes-reminders/dist/nodes/Reminders/Reminders.node.js
+        test -f node_modules/*/n8n-nodes-reminders/dist/nodes/RemindersAiTool/RemindersAiTool.node.js || test -f node_modules/n8n-nodes-reminders/dist/nodes/RemindersAiTool/RemindersAiTool.node.js
+        echo "✅ All required files found!"
