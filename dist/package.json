@@ -1,6 +1,6 @@
 {
     "name": "n8n-nodes-reminders",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "n8n nodes for macOS Reminders API with AI tool support",
     "keywords": [
         "n8n-community-node-package",
@@ -39,7 +39,11 @@
     },
     "files": [
         "dist/credentials/RemindersApi.credentials.*",
-        "dist/nodes/Reminders/",
+        "dist/nodes/RemindersList/",
+        "dist/nodes/RemindersTask/",
+        "dist/nodes/RemindersSearch/",
+        "dist/nodes/RemindersWebhook/",
+        "dist/nodes/shared/",
         "README.md",
         "LICENSE.md"
     ],
@@ -49,7 +53,10 @@
             "dist/credentials/RemindersApi.credentials.js"
         ],
         "nodes": [
-            "dist/nodes/Reminders/Reminders.node.js"
+            "dist/nodes/RemindersList/RemindersList.node.js",
+            "dist/nodes/RemindersTask/RemindersTask.node.js",
+            "dist/nodes/RemindersSearch/RemindersSearch.node.js",
+            "dist/nodes/RemindersWebhook/RemindersWebhook.node.js"
         ]
     },
     "devDependencies": {
