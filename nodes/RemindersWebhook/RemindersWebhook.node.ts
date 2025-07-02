@@ -1,4 +1,5 @@
 import {
+	IExecuteSingleFunctions,
 	INodeType,
 	INodeTypeDescription,
 	NodeConnectionType,
@@ -14,7 +15,7 @@ export class RemindersWebhook implements INodeType {
 		group: ['productivity'],
 		version: 1,
 		subtitle: '={{$parameter["operation"]}}',
-		description: 'Manage webhook configurations for reminder notifications',
+		description: 'Manage webhook configurations for real-time reminder notifications with advanced filtering and testing capabilities',
 		defaults: {
 			name: 'Reminders Webhook',
 		},
@@ -31,6 +32,30 @@ export class RemindersWebhook implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
+						name: 'List Webhooks',
+						value: 'list',
+						action: 'List all webhooks',
+						description: 'Get all configured webhooks',
+						routing: {
+							request: {
+								method: 'GET',
+								url: '/webhooks',
+							},
+						},
+					},
+					{
+						name: 'Get Webhook',
+						value: 'get',
+						action: 'Get webhook by ID',
+						description: 'Get a specific webhook configuration',
+						routing: {
+							request: {
+								method: 'GET',
+								url: '=/webhooks/{{$parameter.webhookId}}',
+							},
+						},
+					},
+					{
 						name: 'Create Webhook',
 						value: 'create',
 						action: 'Create a new webhook',
@@ -42,43 +67,18 @@ export class RemindersWebhook implements INodeType {
 							},
 							send: {
 								type: 'body',
-								property: 'url,name,filter',
-							},
-						},
-					},
-					{
-						name: 'Delete Webhook',
-						value: 'delete',
-						action: 'Delete a webhook',
-						description: 'Delete a webhook configuration',
-						routing: {
-							request: {
-								method: 'DELETE',
-								url: '=/webhooks/{{$parameter.webhookId}}',
-							},
-						},
-					},
-					{
-						name: 'Get Many',
-						value: 'getAll',
-						action: 'Get many webhooks',
-						description: 'Get many webhook configurations',
-						routing: {
-							request: {
-								method: 'GET',
-								url: '/webhooks',
-							},
-						},
-					},
-					{
-						name: 'Test Webhook',
-						value: 'test',
-						action: 'Test a webhook',
-						description: 'Send a test event to a webhook',
-						routing: {
-							request: {
-								method: 'POST',
-								url: '=/webhooks/{{$parameter.webhookId}}/test',
+								preSend: [
+									function (this: IExecuteSingleFunctions, requestOptions: any) {
+										const body: any = {
+											url: this.getNodeParameter('url', 0) as string,
+											name: this.getNodeParameter('name', 0) as string,
+											filter: RemindersUtils.buildWebhookFilter(this),
+										};
+
+										requestOptions.body = body;
+										return requestOptions;
+									},
+								],
 							},
 						},
 					},
@@ -94,12 +94,67 @@ export class RemindersWebhook implements INodeType {
 							},
 							send: {
 								type: 'body',
-								property: 'url,name,isActive,filter',
+								preSend: [
+									function (this: IExecuteSingleFunctions, requestOptions: any) {
+										const body: any = {};
+
+										const url = this.getNodeParameter('url', 0, undefined) as string;
+										if (url) body.url = url;
+
+										const name = this.getNodeParameter('name', 0, undefined) as string;
+										if (name) body.name = name;
+
+										const isActive = this.getNodeParameter('isActive', 0, undefined) as boolean;
+										if (isActive !== undefined) body.isActive = isActive;
+
+										const filterOptions = this.getNodeParameter('filterOptions', 0, {}) as any;
+										if (Object.keys(filterOptions).length > 0) {
+											body.filter = RemindersUtils.buildWebhookFilter(this);
+										}
+
+										requestOptions.body = body;
+										return requestOptions;
+									},
+								],
+							},
+						},
+					},
+					{
+						name: 'Delete Webhook',
+						value: 'delete',
+						action: 'Delete a webhook',
+						description: 'Delete a webhook configuration',
+						routing: {
+							request: {
+								method: 'DELETE',
+								url: '=/webhooks/{{$parameter.webhookId}}',
+							},
+							output: {
+								postReceive: [
+									{
+										type: 'set',
+										properties: {
+											value: '={{ { "success": true, "webhookId": $parameter.webhookId } }}',
+										},
+									},
+								],
+							},
+						},
+					},
+					{
+						name: 'Test Webhook',
+						value: 'test',
+						action: 'Test webhook delivery',
+						description: 'Send a test notification to verify webhook is working',
+						routing: {
+							request: {
+								method: 'POST',
+								url: '=/webhooks/{{$parameter.webhookId}}/test',
 							},
 						},
 					},
 				],
-				default: 'getAll',
+				default: 'list',
 			},
 
 			// Webhook ID for operations that need it
@@ -110,15 +165,15 @@ export class RemindersWebhook implements INodeType {
 				required: true,
 				displayOptions: {
 					show: {
-						operation: ['update', 'delete', 'test'],
+						operation: ['get', 'update', 'delete', 'test'],
 					},
 				},
 				default: '',
-				description: 'UUID of the webhook configuration',
+				description: 'ID of the webhook',
 				placeholder: 'webhook-uuid-123',
 			},
 
-			// Webhook URL for Create and Update
+			// URL for Create and Update
 			{
 				displayName: 'Webhook URL',
 				name: 'url',
@@ -130,7 +185,7 @@ export class RemindersWebhook implements INodeType {
 					},
 				},
 				default: '',
-				description: 'URL to send webhook notifications to',
+				description: 'URL where webhook notifications will be sent',
 				placeholder: 'https://your-server.com/webhook',
 			},
 
@@ -144,11 +199,11 @@ export class RemindersWebhook implements INodeType {
 					},
 				},
 				default: '',
-				description: 'New URL to send webhook notifications to (leave empty to keep current)',
+				description: 'New URL for webhook notifications (leave empty to keep current)',
 				placeholder: 'https://your-server.com/webhook',
 			},
 
-			// Webhook Name for Create and Update
+			// Name for Create and Update
 			{
 				displayName: 'Webhook Name',
 				name: 'name',
@@ -160,7 +215,7 @@ export class RemindersWebhook implements INodeType {
 					},
 				},
 				default: '',
-				description: 'Name for the webhook configuration',
+				description: 'Descriptive name for the webhook',
 				placeholder: 'Task Notifications',
 			},
 
@@ -174,13 +229,13 @@ export class RemindersWebhook implements INodeType {
 					},
 				},
 				default: '',
-				description: 'New name for the webhook configuration (leave empty to keep current)',
+				description: 'New name for the webhook (leave empty to keep current)',
 				placeholder: 'Task Notifications',
 			},
 
 			// Active status for Update
 			{
-				displayName: 'Active',
+				displayName: 'Is Active',
 				name: 'isActive',
 				type: 'boolean',
 				displayOptions: {
@@ -192,22 +247,90 @@ export class RemindersWebhook implements INodeType {
 				description: 'Whether the webhook is active',
 			},
 
-			// Filter for Create and Update
+			// Filter Options for Create and Update
 			{
-				displayName: 'Filter Configuration',
-				name: 'filter',
-				type: 'json',
+				displayName: 'Filter Options',
+				name: 'filterOptions',
+				type: 'collection',
+				placeholder: 'Add Filter Option',
+				default: {},
 				displayOptions: {
 					show: {
 						operation: ['create', 'update'],
 					},
 				},
-				default: '{}',
-				description: 'JSON filter configuration for webhook events',
-				placeholder: '{"listNames": ["Shopping", "Work"], "completed": "all"}',
-				typeOptions: {
-					rows: 5,
-				},
+				options: [
+					{
+						displayName: 'Completion Status',
+						name: 'completed',
+						type: 'options',
+						options: [
+							{
+								name: 'All',
+								value: 'all',
+							},
+							{
+								name: 'Complete Only',
+								value: 'complete',
+							},
+							{
+								name: 'Incomplete Only',
+								value: 'incomplete',
+							},
+						],
+						default: 'all',
+						description: 'Which completion status to monitor',
+					},
+					{
+						displayName: 'List Names',
+						name: 'listNames',
+						type: 'string',
+						default: '',
+						description: 'Comma-separated list of list names to monitor',
+						placeholder: 'Work,Personal,Shopping',
+					},
+					{
+						displayName: 'List UUIDs',
+						name: 'listUUIDs',
+						type: 'string',
+						default: '',
+						description: 'Comma-separated list of list UUIDs to monitor (more reliable than names)',
+						placeholder: 'uuid1,uuid2,uuid3',
+					},
+					{
+						displayName: 'Priority Levels',
+						name: 'priorityLevels',
+						type: 'multiOptions',
+						options: [
+							{
+								name: 'None (0)',
+								value: 0,
+							},
+							{
+								name: 'Low (1)',
+								value: 1,
+							},
+							{
+								name: 'Medium (5)',
+								value: 5,
+							},
+							{
+								name: 'High (9)',
+								value: 9,
+							},
+						],
+						default: [],
+						description: 'Priority levels to monitor (empty = all priorities)',
+					},
+					{
+						displayName: 'Text Filter',
+						name: 'hasQuery',
+						type: 'string',
+						default: '',
+						description: 'Text that must be present in reminder title or notes',
+						placeholder: 'urgent',
+					},
+				],
 			},
 		],
 	};

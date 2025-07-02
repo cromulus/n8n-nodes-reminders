@@ -1,4 +1,9 @@
-import { INodeType, INodeTypeDescription } from 'n8n-workflow';
+import { ILoadOptionsFunctions, INodeListSearchResult, INodeType, INodeTypeDescription } from 'n8n-workflow';
 export declare class RemindersSearch implements INodeType {
     description: INodeTypeDescription;
+    methods: {
+        listSearch: {
+            searchLists(this: ILoadOptionsFunctions, filter?: string): Promise<INodeListSearchResult>;
+        };
+    };
 }
