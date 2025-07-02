@@ -45,6 +45,7 @@ class RemindersTask {
             },
             inputs: ["main"],
             outputs: ["main"],
+            usableAsTool: true,
             credentials: RemindersUtils_1.RemindersUtils.getCredentialsConfig(),
             requestDefaults: RemindersUtils_1.RemindersUtils.getBaseRequestDefaults(),
             properties: [

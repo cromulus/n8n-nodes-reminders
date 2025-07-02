@@ -14,26 +14,26 @@ export declare const inputSchema: z.ZodObject<{
     attachedUrl: z.ZodOptional<z.ZodString>;
     includeCompleted: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
-    operation: "getAll" | "get" | "create" | "update" | "delete" | "complete" | "createSubtask";
+    operation: "complete" | "getAll" | "get" | "create" | "update" | "delete" | "createSubtask";
     listName?: string | undefined;
     includeCompleted?: boolean | undefined;
-    dueDate?: string | undefined;
+    reminderId?: string | undefined;
     priority?: "none" | "low" | "medium" | "high" | undefined;
     title?: string | undefined;
-    reminderId?: string | undefined;
+    dueDate?: string | undefined;
     notes?: string | undefined;
     startDate?: string | undefined;
     isCompleted?: boolean | undefined;
     parentId?: string | undefined;
     attachedUrl?: string | undefined;
 }, {
-    operation: "getAll" | "get" | "create" | "update" | "delete" | "complete" | "createSubtask";
+    operation: "complete" | "getAll" | "get" | "create" | "update" | "delete" | "createSubtask";
     listName?: string | undefined;
     includeCompleted?: boolean | undefined;
-    dueDate?: string | undefined;
+    reminderId?: string | undefined;
     priority?: "none" | "low" | "medium" | "high" | undefined;
     title?: string | undefined;
-    reminderId?: string | undefined;
+    dueDate?: string | undefined;
     notes?: string | undefined;
     startDate?: string | undefined;
     isCompleted?: boolean | undefined;

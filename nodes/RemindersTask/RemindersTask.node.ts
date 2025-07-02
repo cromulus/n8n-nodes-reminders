@@ -66,6 +66,7 @@ export class RemindersTask implements INodeType {
 		},
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
+		usableAsTool: true,
 		credentials: RemindersUtils.getCredentialsConfig(),
 		requestDefaults: RemindersUtils.getBaseRequestDefaults(),
 		properties: [

@@ -1,7 +1,7 @@
 {
     "name": "n8n-nodes-reminders",
-    "version": "2.0.0",
-    "description": "n8n nodes for macOS Reminders API with enhanced private API features including subtasks, URL attachments, advanced search, and webhook management",
+    "version": "2.2.0",
+    "description": "n8n community nodes for macOS Reminders with comprehensive API access, private API features, UUID search, and AI Tool integration",
     "keywords": [
         "n8n-community-node-package",
         "n8n",
