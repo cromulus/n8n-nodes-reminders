@@ -1,8 +1,8 @@
 # n8n-nodes-reminders
 
-![Build Status](https://github.com/your-username/n8n-nodes-reminders/workflows/Build%20and%20Publish/badge.svg)
+![Build Status](https://github.com/cromulus/n8n-nodes-reminders/workflows/Build%20and%20Publish/badge.svg)
 ![npm version](https://img.shields.io/npm/v/n8n-nodes-reminders.svg)
-![GitHub release](https://img.shields.io/github/v/release/your-username/n8n-nodes-reminders)
+![GitHub release](https://img.shields.io/github/v/release/cromulus/n8n-nodes-reminders)
 
 n8n community nodes for integrating with macOS Reminders through the Reminders CLI HTTP API. This package provides both traditional workflow nodes and AI-powered tool nodes for seamless automation.
 
@@ -23,10 +23,10 @@ n8n community nodes for integrating with macOS Reminders through the Reminders C
 
 ```bash
 # Install directly from GitHub repository
-npm install your-username/n8n-nodes-reminders
+npm install cromulus/n8n-nodes-reminders
 
 # Or install a specific version/release
-npm install your-username/n8n-nodes-reminders#v1.0.0
+npm install cromulus/n8n-nodes-reminders#v2.3.0
 ```
 
 ### Option 2: Install from npm (if published)
@@ -39,10 +39,10 @@ npm install n8n-nodes-reminders
 
 ```bash
 # Configure npm to use GitHub Packages for scoped packages
-echo "@your-username:registry=https://npm.pkg.github.com" >> ~/.npmrc
+echo "@cromulus:registry=https://npm.pkg.github.com" >> ~/.npmrc
 
 # Install the scoped package
-npm install @your-username/n8n-nodes-reminders
+npm install @cromulus/n8n-nodes-reminders
 ```
 
 ## Prerequisites
@@ -297,17 +297,17 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Links
 
-- [GitHub Repository](https://github.com/your-username/n8n-nodes-reminders)
+- [GitHub Repository](https://github.com/cromulus/n8n-nodes-reminders)
 - [npm Package](https://www.npmjs.com/package/n8n-nodes-reminders)
-- [GitHub Packages](https://github.com/your-username/n8n-nodes-reminders/packages)
+- [GitHub Packages](https://github.com/cromulus/n8n-nodes-reminders/packages)
 - [Reminders CLI](https://github.com/cromulus/reminders-cli)
 - [n8n Community](https://community.n8n.io/)
 
 ## Support
 
-- 🐛 [Report Issues](https://github.com/your-username/n8n-nodes-reminders/issues)
-- 💬 [Discussions](https://github.com/your-username/n8n-nodes-reminders/discussions)
-- 📖 [Documentation](https://github.com/your-username/n8n-nodes-reminders/wiki)
+- 🐛 [Report Issues](https://github.com/cromulus/n8n-nodes-reminders/issues)
+- 💬 [Discussions](https://github.com/cromulus/n8n-nodes-reminders/discussions)
+- 📖 [Documentation](https://github.com/cromulus/n8n-nodes-reminders/wiki)
 
 ---
 

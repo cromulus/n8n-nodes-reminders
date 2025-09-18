@@ -1,56 +1,10 @@
 import {
-	IExecuteFunctions,
-	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
 	NodeConnectionType,
-	NodeOperationError,
 } from 'n8n-workflow';
-import { z } from 'zod';
 
 import { RemindersUtils } from '../shared/RemindersUtils';
-
-// AI Tool Input Schema - defines what parameters AI can populate
-export const inputSchema = z.object({
-	operation: z.enum(['getAll', 'get', 'create', 'update', 'delete', 'complete', 'createSubtask'])
-		.describe('The operation to perform on reminders'),
-
-	// List identification
-	listName: z.string().optional()
-		.describe('Name or UUID of the reminder list (for create operations)'),
-
-	// Reminder identification
-	reminderId: z.string().optional()
-		.describe('UUID of the specific reminder (for get, update, delete, complete operations)'),
-
-	// Reminder content
-	title: z.string().optional()
-		.describe('Title/name of the reminder'),
-	notes: z.string().optional()
-		.describe('Additional notes or description for the reminder'),
-
-	// Scheduling
-	dueDate: z.string().optional()
-		.describe('Due date in ISO format (e.g., 2024-01-15T10:00:00Z)'),
-	startDate: z.string().optional()
-		.describe('Start date in ISO format'),
-
-	// Priority and status
-	priority: z.enum(['none', 'low', 'medium', 'high']).optional()
-		.describe('Priority level of the reminder'),
-	isCompleted: z.boolean().optional()
-		.describe('Whether the reminder is completed'),
-
-	// Private API features
-	parentId: z.string().optional()
-		.describe('UUID of parent reminder (for creating subtasks)'),
-	attachedUrl: z.string().optional()
-		.describe('URL to attach to the reminder'),
-
-	// Query options
-	includeCompleted: z.boolean().optional()
-		.describe('Whether to include completed reminders in results'),
-});
 
 export class RemindersTask implements INodeType {
 	description: INodeTypeDescription = {
@@ -66,9 +20,14 @@ export class RemindersTask implements INodeType {
 		},
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
-		usableAsTool: true,
 		credentials: RemindersUtils.getCredentialsConfig(),
-		requestDefaults: RemindersUtils.getBaseRequestDefaults(),
+		requestDefaults: {
+			baseURL: '={{$credentials.baseUrl}}',
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json',
+			},
+		},
 		properties: [
 			{
 				displayName: 'Operation',
@@ -81,42 +40,148 @@ export class RemindersTask implements INodeType {
 						value: 'complete',
 						description: 'Mark a reminder as completed',
 						action: 'Complete a reminder',
+						routing: {
+							request: {
+								method: 'PATCH',
+								url: '=/reminders/{{$parameter.uuid}}/complete',
+							},
+						},
 					},
 					{
 						name: 'Create',
 						value: 'create',
 						description: 'Create a new reminder',
 						action: 'Create a reminder',
+						routing: {
+							request: {
+								method: 'POST',
+								url: '=/lists/{{$parameter.listName.value || $parameter.listName}}/reminders',
+								body: {
+									title: '={{$parameter.title}}',
+									notes: '={{$parameter.notes}}',
+									dueDate: '={{$parameter.dueDate}}',
+									priority: '={{$parameter.priority}}',
+									startDate: '={{$parameter.startDate}}',
+									parentId: '={{$parameter.privateFeatures?.parentId}}',
+									attachedUrl: '={{$parameter.privateFeatures?.attachedUrl}}',
+								},
+							},
+							output: {
+								postReceive: [
+									{
+										type: 'rootProperty',
+										properties: {
+											property: 'data',
+										},
+									},
+								],
+							},
+						},
 					},
 					{
 						name: 'Create Subtask',
 						value: 'createSubtask',
 						description: 'Create a subtask under a parent reminder',
 						action: 'Create a subtask',
+						routing: {
+							request: {
+								method: 'POST',
+								url: '=/lists/{{$parameter.listName.value || $parameter.listName}}/reminders',
+								body: {
+									title: '={{$parameter.title}}',
+									notes: '={{$parameter.notes}}',
+									dueDate: '={{$parameter.dueDate}}',
+									priority: '={{$parameter.priority}}',
+									startDate: '={{$parameter.startDate}}',
+									parentId: '={{$parameter.parentUuid}}',
+								},
+							},
+							output: {
+								postReceive: [
+									{
+										type: 'rootProperty',
+										properties: {
+											property: 'data',
+										},
+									},
+								],
+							},
+						},
 					},
 					{
 						name: 'Delete',
 						value: 'delete',
 						description: 'Delete a reminder',
 						action: 'Delete a reminder',
+						routing: {
+							request: {
+								method: 'DELETE',
+								url: '=/reminders/{{$parameter.uuid}}',
+							},
+						},
 					},
 					{
 						name: 'Get',
 						value: 'get',
 						description: 'Get a specific reminder by UUID',
 						action: 'Get a reminder',
+						routing: {
+							request: {
+								method: 'GET',
+								url: '=/reminders/{{$parameter.uuid}}',
+							},
+						},
 					},
 					{
 						name: 'Get Many',
 						value: 'getAll',
 						description: 'Get many reminders across lists',
 						action: 'Get many reminders',
+						routing: {
+							request: {
+								method: 'GET',
+								url: '/reminders',
+								qs: {
+									completed: '={{$parameter.includeCompleted}}',
+								},
+							},
+						},
+					},
+					{
+						name: 'Uncomplete',
+						value: 'uncomplete',
+						description: 'Mark a reminder as incomplete',
+						action: 'Uncomplete a reminder',
+						routing: {
+							request: {
+								method: 'PATCH',
+								url: '=/reminders/{{$parameter.uuid}}/uncomplete',
+							},
+						},
 					},
 					{
 						name: 'Update',
 						value: 'update',
 						description: 'Update an existing reminder',
 						action: 'Update a reminder',
+						routing: {
+							request: {
+								method: 'PATCH',
+								url: '=/reminders/{{$parameter.uuid}}',
+								body: {
+									title: '={{$parameter.title}}',
+									notes: '={{$parameter.notes}}',
+									dueDate: '={{$parameter.dueDate}}',
+									priority: '={{$parameter.priority}}',
+									startDate: '={{$parameter.startDate}}',
+									isCompleted: '={{$parameter.isCompleted}}',
+									newListName: '={{$parameter.newListName?.value || $parameter.newListName}}',
+									parentId: '={{$parameter.privateFeatures?.parentId}}',
+									attachedUrl: '={{$parameter.privateFeatures?.attachedUrl}}',
+								},
+								ignoreHttpStatusErrors: false,
+							},
+						},
 					},
 				],
 				default: 'getAll',
@@ -485,336 +550,4 @@ export class RemindersTask implements INodeType {
 			},
 		},
 	};
-
-	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-		const items = this.getInputData();
-		const returnData: INodeExecutionData[] = [];
-
-		// Helper to get parameter value with AI input support
-		const getParam = (paramName: string, itemIndex: number, inputJson: any, defaultValue?: any): any => {
-			// Check AI input first
-			if (inputJson[paramName] !== undefined) return inputJson[paramName];
-			if (inputJson.params?.[paramName] !== undefined) return inputJson.params[paramName];
-			if (inputJson.parameters?.[paramName] !== undefined) return inputJson.parameters[paramName];
-
-			// Fall back to node parameter
-			try {
-				return this.getNodeParameter(paramName, itemIndex, defaultValue);
-			} catch {
-				return defaultValue;
-			}
-		};
-
-		for (let i = 0; i < items.length; i++) {
-			try {
-				// Get operation - check input data first for AI tool usage, then fall back to parameter
-				const inputJson = items[i].json;
-				const operation = (inputJson.operation as string) || this.getNodeParameter('operation', i) as string;
-
-				let responseData: any;
-
-				switch (operation) {
-					case 'getAll': {
-						const includeCompleted = getParam('includeCompleted', i, inputJson, false);
-
-						responseData = await this.helpers.httpRequestWithAuthentication.call(
-							this,
-							'remindersApi',
-							{
-								method: 'GET',
-								url: '/reminders',
-								qs: {
-									completed: includeCompleted.toString(),
-								},
-								json: true,
-							},
-						);
-
-						responseData = Array.isArray(responseData) ? responseData : [];
-						break;
-					}
-
-					case 'get': {
-						const reminderId = getParam('reminderId', i, inputJson);
-						if (!reminderId) {
-							throw new NodeOperationError(this.getNode(), 'Reminder ID is required');
-						}
-
-						responseData = await this.helpers.httpRequestWithAuthentication.call(
-							this,
-							'remindersApi',
-							{
-								method: 'GET',
-								url: `/reminders/${encodeURIComponent(reminderId)}`,
-								json: true,
-							},
-						);
-						break;
-					}
-
-					case 'create': {
-						const data: any = {};
-
-						// Core fields with AI input support
-						const title = getParam('title', i, inputJson);
-						if (title) data.title = title;
-
-						const additionalFields = getParam('additionalFields', i, inputJson, {});
-
-						// Notes with multiple possible field names
-						const notes = getParam('notes', i, inputJson) ||
-									 additionalFields.notes ||
-									 getParam('description', i, inputJson);
-						if (notes) data.notes = notes;
-
-						// Dates
-						const dueDate = getParam('dueDate', i, inputJson) || additionalFields.dueDate;
-						if (dueDate) data.dueDate = dueDate;
-
-						const startDate = getParam('startDate', i, inputJson) || additionalFields.startDate;
-						if (startDate) data.startDate = startDate;
-
-						// Priority with conversion
-						const priority = getParam('priority', i, inputJson) || additionalFields.priority;
-						if (priority && priority !== 'none') {
-							const priorityMap: any = { low: 1, medium: 5, high: 9 };
-							data.priority = priorityMap[priority] || priority;
-						}
-
-						// Private API features
-						const privateFeatures = getParam('privateFeatures', i, inputJson, {});
-
-						const attachedUrl = getParam('attachedUrl', i, inputJson) ||
-										   privateFeatures.attachedUrl ||
-										   getParam('url', i, inputJson);
-						if (attachedUrl) data.attachedUrl = attachedUrl;
-
-						// Get list identifier with AI input support
-						const aiListName = getParam('listName', i, inputJson) ||
-										  getParam('list', i, inputJson) ||
-										  getParam('listUUID', i, inputJson);
-
-						let listIdentifier: string;
-						if (aiListName) {
-							listIdentifier = RemindersUtils.extractListIdentifier(aiListName);
-						} else {
-							const listParam = this.getNodeParameter('listName', i, '') as any;
-							listIdentifier = RemindersUtils.extractListIdentifier(listParam);
-						}
-
-						responseData = await this.helpers.httpRequestWithAuthentication.call(
-							this,
-							'remindersApi',
-							{
-								method: 'POST',
-								url: `/lists/${encodeURIComponent(listIdentifier)}/reminders`,
-								json: true,
-								body: data,
-							},
-						);
-						break;
-					}
-
-					case 'createSubtask': {
-						const data: any = {};
-
-						// Core fields with AI input support
-						const title = getParam('title', i, inputJson);
-						if (title) data.title = title;
-
-						const additionalFields = getParam('additionalFields', i, inputJson, {});
-
-						const notes = getParam('notes', i, inputJson) ||
-									 additionalFields.notes ||
-									 getParam('description', i, inputJson);
-						if (notes) data.notes = notes;
-
-						const dueDate = getParam('dueDate', i, inputJson) || additionalFields.dueDate;
-						if (dueDate) data.dueDate = dueDate;
-
-						const startDate = getParam('startDate', i, inputJson) || additionalFields.startDate;
-						if (startDate) data.startDate = startDate;
-
-						const priority = getParam('priority', i, inputJson) || additionalFields.priority;
-						if (priority && priority !== 'none') {
-							const priorityMap: any = { low: 1, medium: 5, high: 9 };
-							data.priority = priorityMap[priority] || priority;
-						}
-
-						// Get parent ID from private features or direct input
-						const privateFeatures = getParam('privateFeatures', i, inputJson, {});
-						const parentId = getParam('parentId', i, inputJson) || privateFeatures.parentId;
-
-						if (!parentId) {
-							throw new NodeOperationError(this.getNode(), 'Parent ID is required for creating subtasks');
-						}
-
-						data.parentId = parentId;
-
-						const attachedUrl = getParam('attachedUrl', i, inputJson) ||
-										   privateFeatures.attachedUrl ||
-										   getParam('url', i, inputJson);
-						if (attachedUrl) data.attachedUrl = attachedUrl;
-
-						// Get list identifier
-						const aiListName = getParam('listName', i, inputJson) ||
-										  getParam('list', i, inputJson) ||
-										  getParam('listUUID', i, inputJson);
-
-						let listIdentifier: string;
-						if (aiListName) {
-							listIdentifier = RemindersUtils.extractListIdentifier(aiListName);
-						} else {
-							const listParam = this.getNodeParameter('listName', i, '') as any;
-							listIdentifier = RemindersUtils.extractListIdentifier(listParam);
-						}
-
-						responseData = await this.helpers.httpRequestWithAuthentication.call(
-							this,
-							'remindersApi',
-							{
-								method: 'POST',
-								url: `/lists/${encodeURIComponent(listIdentifier)}/reminders`,
-								json: true,
-								body: data,
-							},
-						);
-						break;
-					}
-
-					case 'update': {
-						const reminderId = getParam('reminderId', i, inputJson);
-						if (!reminderId) {
-							throw new NodeOperationError(this.getNode(), 'Reminder ID is required');
-						}
-
-						const data: any = {};
-
-						// Core fields with AI input support
-						const title = getParam('title', i, inputJson);
-						if (title) data.title = title;
-
-						const additionalFields = getParam('additionalFields', i, inputJson, {});
-
-						const notes = getParam('notes', i, inputJson) ||
-									 additionalFields.notes ||
-									 getParam('description', i, inputJson);
-						if (notes) data.notes = notes;
-
-						const dueDate = getParam('dueDate', i, inputJson) || additionalFields.dueDate;
-						if (dueDate) data.dueDate = dueDate;
-
-						const startDate = getParam('startDate', i, inputJson) || additionalFields.startDate;
-						if (startDate) data.startDate = startDate;
-
-						const priority = getParam('priority', i, inputJson) || additionalFields.priority;
-						if (priority && priority !== 'none') {
-							const priorityMap: any = { low: 1, medium: 5, high: 9 };
-							data.priority = priorityMap[priority] || priority;
-						}
-
-						const isCompleted = getParam('isCompleted', i, inputJson) || additionalFields.isCompleted;
-						if (isCompleted !== undefined) data.isCompleted = isCompleted;
-
-						const privateFeatures = getParam('privateFeatures', i, inputJson, {});
-
-						const attachedUrl = getParam('attachedUrl', i, inputJson) ||
-										   privateFeatures.attachedUrl ||
-										   getParam('url', i, inputJson);
-						if (attachedUrl) data.attachedUrl = attachedUrl;
-
-						// Only include fields that have values for updates
-						const filteredData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined && v !== ''));
-
-						responseData = await this.helpers.httpRequestWithAuthentication.call(
-							this,
-							'remindersApi',
-							{
-								method: 'PATCH',
-								url: `/reminders/${encodeURIComponent(reminderId)}`,
-								json: true,
-								body: filteredData,
-							},
-						);
-						break;
-					}
-
-					case 'delete': {
-						const reminderId = getParam('reminderId', i, inputJson);
-						if (!reminderId) {
-							throw new NodeOperationError(this.getNode(), 'Reminder ID is required');
-						}
-
-						await this.helpers.httpRequestWithAuthentication.call(
-							this,
-							'remindersApi',
-							{
-								method: 'DELETE',
-								url: `/reminders/${encodeURIComponent(reminderId)}`,
-								json: true,
-							},
-						);
-
-						responseData = { success: true, deleted: reminderId };
-						break;
-					}
-
-					case 'complete': {
-						const reminderId = getParam('reminderId', i, inputJson);
-						if (!reminderId) {
-							throw new NodeOperationError(this.getNode(), 'Reminder ID is required');
-						}
-
-						await this.helpers.httpRequestWithAuthentication.call(
-							this,
-							'remindersApi',
-							{
-								method: 'PATCH',
-								url: `/reminders/${encodeURIComponent(reminderId)}/complete`,
-								json: true,
-							},
-						);
-
-						responseData = { success: true, completed: reminderId };
-						break;
-					}
-
-					default:
-						throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`);
-				}
-
-				// Handle different response types
-				if (Array.isArray(responseData)) {
-					responseData.forEach((item: any) => {
-						returnData.push({
-							json: RemindersUtils.enrichReminderData(item),
-							pairedItem: { item: i },
-						});
-					});
-				} else if (responseData) {
-					returnData.push({
-						json: RemindersUtils.enrichReminderData(responseData),
-						pairedItem: { item: i },
-					});
-				} else {
-					// For operations like delete that might not return data
-					returnData.push({
-						json: { success: true, operation },
-						pairedItem: { item: i },
-					});
-				}
-			} catch (error) {
-				if (this.continueOnFail()) {
-					returnData.push({
-						json: { error: error.message },
-						pairedItem: { item: i },
-					});
-				} else {
-					throw error;
-				}
-			}
-		}
-
-		return [returnData];
-	}
 }
