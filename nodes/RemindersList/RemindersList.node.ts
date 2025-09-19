@@ -21,13 +21,7 @@ export class RemindersList implements INodeType {
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
 		credentials: RemindersUtils.getCredentialsConfig(),
-		requestDefaults: {
-			baseURL: '={{$credentials.baseUrl}}',
-			headers: {
-				Accept: 'application/json',
-				'Content-Type': 'application/json',
-			},
-		},
+		requestDefaults: RemindersUtils.getBaseRequestDefaults(),
 		properties: [
 			{
 				displayName: 'Operation',

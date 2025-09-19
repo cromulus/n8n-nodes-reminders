@@ -18,13 +18,7 @@ class RemindersSearch {
             inputs: ["main"],
             outputs: ["main"],
             credentials: RemindersUtils_1.RemindersUtils.getCredentialsConfig(),
-            requestDefaults: {
-                baseURL: '={{$credentials.baseUrl}}',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                },
-            },
+            requestDefaults: RemindersUtils_1.RemindersUtils.getBaseRequestDefaults(),
             properties: [
                 {
                     displayName: 'Operation',

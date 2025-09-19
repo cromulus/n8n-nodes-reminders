@@ -1,6 +1,6 @@
 {
     "name": "n8n-nodes-reminders",
-    "version": "2.2.0",
+    "version": "2.3.0",
     "description": "n8n community nodes for macOS Reminders with comprehensive API access, private API features, UUID search, and AI Tool integration",
     "keywords": [
         "n8n-community-node-package",
@@ -13,14 +13,14 @@
         "task-management"
     ],
     "license": "MIT",
-    "homepage": "https://github.com/your-username/n8n-nodes-reminders#readme",
+    "homepage": "https://github.com/cromulus/n8n-nodes-reminders#readme",
     "author": {
-        "name": "Your Name",
-        "email": "your.email@example.com"
+        "name": "cromulus",
+        "email": "cromulus@users.noreply.github.com"
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/your-username/n8n-nodes-reminders.git"
+        "url": "https://github.com/cromulus/n8n-nodes-reminders.git"
     },
     "engines": {
         "node": ">=20.15"
